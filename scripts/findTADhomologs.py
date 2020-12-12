@@ -8,6 +8,11 @@ import pandas as pd
 import re
 
 
+"""
+This script compares the TADs and the genes therein in human and axolotl and outputs the TADs that a similar
+in terms of the contained genes
+"""
+
 # Load the tads+genes files for human and axolotl separately 
 # Format:
 #   chr     start    end      gene1;gene2;gene3
@@ -100,8 +105,10 @@ with open(sys.argv[4], 'w') as hFile:
         if bestMatch:
             m = re.search('^([^:]+):([0-9]+)-([0-9]+)$', tadCoord)
             if m:
-                cnes = hg19_cnes[hg19_cnes['Start'].between(int(m.group(2)), int(m.group(3))) | hg19_cnes['End'].between(int(m.group(2)), int(m.group(3)))].values.tolist()
-                cnes = [f'{x[0]}:{x[1]}-{x[2]}' for x in cnes]
+                cnes = hg19_cnes[(hg19_cnes['Chromosome'] == m.group(1)) &
+                                 (hg19_cnes['Start'].between(int(m.group(2)), int(m.group(3))) | 
+                                  hg19_cnes['End'].between(int(m.group(2)), int(m.group(3))))]
+                cnes = [f'{x[0]}:{x[1]}-{x[2]}' for x in cnes.values.tolist()]
                 if len(cnes) == 0:
                     cnes = 'N/A'
                 print(f'{tadCoord}\t{hg19_tads[tadCoord]}\t{cnes}\t{bestMatch}\t{ambMex_tads[bestMatch]}', file=hFile)
