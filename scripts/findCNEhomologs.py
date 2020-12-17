@@ -21,18 +21,17 @@ if len(sys.argv) < 4:
 
 
 taskid = 1
-os.system('mkdir _tmp_')
 with(open(sys.argv[1])) as hFile:
     for line in hFile.readlines():
         if line.startswith('Human locus'):
             continue
         
-        locusHsap, genesHsap, cnesHsap, locusAmex, gneesAmex = line.strip().split('\t')
+        locusHsap, cnesHsap, genesHsap, locusAmex, genesAmex = line.strip().split('\t')
         if cnesHsap == 'N/A':
             continue
 
         with(open('_CNE_hs.list', 'w')) as hQueries:
-            for m in re.findall('chr[0-9]+:[0-9]+-[0-9]+', cnesHsap):
+            for m in re.findall('chr[^:]+:[0-9]+-[0-9]+', cnesHsap):
                 print(m.replace(':', '_').replace('-', '_'), file=hQueries)
 
         print(f'Processing {locusHsap}', file=sys.stderr)
@@ -42,12 +41,6 @@ with(open(sys.argv[1])) as hFile:
         print(f'   Extracting the axolotl sequences', file=sys.stderr)
         os.system(f'samtools faidx {sys.argv[3]} {locusAmex} > _tmp_/{taskid}_amex.fa')
 
+        print(f"lastz_32 _tmp_/{taskid}_amex.fa _tmp_/{taskid}_CNE_hs.fa --format=sam W=5 K=2200 L=3000 Q=HoxD55.q > _tmp_/{taskid}_out.sam")
+
         taskid += 1
-
-
-print(f'   Submitting lastz jobs', file=sys.stderr)
-cmd = f'sbatch -J lastz --qos=short --time=00:10:00 --array=1-{taskid - 1} --wrap="lastz_32 ' + \
-                            '_tmp_/\\${SLURM_ARRAY_TASDK_ID}_amex.fa ' + \
-                            '_tmp_/\\${SLURM_ARRAY_TASK_ID}_CNE_hs.fa ' + \
-                            '--format=sam W=5 K=2200 L=3000 Q=HoxD55.q > _tmp_/\\${SLURM_ARRAY_TASK_ID}_out.sam"'
-print(cmd)

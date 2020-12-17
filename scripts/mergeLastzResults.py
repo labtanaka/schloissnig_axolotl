@@ -36,7 +36,7 @@ for f in os.listdir(sys.argv[1]):
                     print(f'   ERROR: the chromosome ID in the SAM file {fields[2]} does not match the chromosome name in the fasta file {chrName}', file=sys.stderr)
                     sys.exit(2)
 
-                fields[3] = str(int(fields[3]))
+                fields[3] = str(int(fields[3]) + iOffset)
                 if not bestHit or len(fields[9]) > len(bestHit[9]):
                     bestHit = fields
         if bestHit:

@@ -7,7 +7,7 @@ import argparse
 import pandas as pd
 
 
-def loadGenes(bedFile, tads):
+def loadGenes(bedFile):
     data = dict()
     with(open(bedFile, 'r')) as hFile:
         for line in hFile.readlines():
@@ -17,25 +17,10 @@ def loadGenes(bedFile, tads):
 
             # Keep the longest isoform
             if ( not data.get(symbol) or (end - start) > (data[symbol]['end'] - data[symbol]['start']) ):
-
-                # Find the longest TAD that contains the current gene
-                _tads = tads[(tads['chr'] == chrName) & 
-                             (tads['start'] <= start) & 
-                             (tads['end'] >= end)]
-
-                [[chrID_tad, start_tad, end_tad]] = [['NA', -1, -1]]
-                if _tads['chr'].count() > 0:
-                    maxlen = pd.DataFrame.max(_tads['end'] - _tads['start'])
-                    [[chrID_tad, start_tad, end_tad]] = _tads[_tads['end'] - _tads['start'] == maxlen].head(1).values
-                
-                data[symbol] = {'chr': chrName, 'start': start, 'end': end, 'tad_chr': chrID_tad, 'tad_start': start_tad, 'tad_end': end_tad}
-    return pd.DataFrame(data=[[data[x]['chr'], 
-                               data[x]['start'], 
-                               data[x]['end'], 
-                               x, 
-                               data[x]['tad_chr'], 
-                               data[x]['tad_start'], 
-                               data[x]['tad_end']] for x in data], columns=['chr', 'start', 'end', 'gene', 'tad_chr', 'tad_start', 'tad_end'])
+                for s in symbol.split('|'):
+                    s = s.replace(' [nr]', '').replace(' [hs]', '')
+                    data[s] = {'chr': chrName, 'start': start, 'end': end}
+    return pd.DataFrame(data=[[data[x]['chr'], data[x]['start'], data[x]['end'], x] for x in data], columns=['chr', 'start', 'end', 'symbol'])
 
 
 def loadTADs(bedFile):
@@ -76,20 +61,18 @@ def main():
     print(f"Reading the human TADs from '{opts.hg19[1]}'", file=sys.stderr)
     tads_hg = loadTADs(opts.hg19[1])
     print(f"Reading the human genes from '{opts.hg19[0]}'", file=sys.stderr)
-    genes_hg = loadGenes(opts.hg19[0], tads_hg)
+    genes_hg = loadGenes(opts.hg19[0])
     print(f'  Loaded {genes_hg["chr"].count()} genes in {tads_hg["chr"].count()} TADs', file=sys.stderr)
 
     print(f"Reading the axolotl TADs from '{opts.amex[1]}'", file=sys.stderr)
     tads_amex = loadTADs(opts.amex[1])
     print(f"Reading the axolotl genes from '{opts.amex[0]}'", file=sys.stderr)
-    genes_amex = loadGenes(opts.amex[0], tads_amex)
+    genes_amex = loadGenes(opts.amex[0])
     print(f'  Loaded {genes_amex["chr"].count()} genes in {tads_amex["chr"].count()} TADs', file=sys.stderr)
 
     print(f"Reading the CNEs from '{opts.sam[0]}'", file=sys.stderr)
     cnes = loadCNEs(opts.sam[0])
     print(f'  Loaded {len(cnes)} CNEs', file=sys.stderr)
-
-    print(genes_hg.head())
 
     # Find the closest gene for each CNE in both human and axolotl
     nSkipped = 0
@@ -107,10 +90,28 @@ def main():
 
             # Use the longest TAD
             maxlen = pd.DataFrame.max(tads['end'] - tads['start'])
-            [[chrID, start, end]] = tads[tads['end'] - tads['start'] == maxlen].values
+            _hg_tad = tads[tads['end'] - tads['start'] == maxlen]
+            [[chrID, start, end]] = _hg_tad.values
 
-            # Find the genes within the tad
-            genes = genes_hg[ (genes_hg['chr'] == chrID) & (genes_hg['start'].between(start, end) | genes_hg['end'].between(start, end)) ]
+            # Find the human genes within the tad and their axolotl counterparts
+            _genes_hg = genes_hg[ (genes_hg['chr'] == chrID) & (genes_hg['start'].between(start, end) | genes_hg['end'].between(start, end)) ]
+            _genes_amex = genes_amex[genes_amex['symbol'].isin(_genes_hg['symbol'].values)]
+
+            # Find the TADs in axolotl that contain the genes identified above
+            _tads = pd.DataFrame()
+            for idx in _genes_amex.index:
+                _tads_amex = tads_amex[ (tads_amex['chr'] == _genes_amex['chr'][idx]) & 
+                                        (tads_amex['start'] <= _genes_amex['start'][idx]) & 
+                                        (tads_amex['end'] >= _genes_amex['end'][idx])]
+                # Find the longest TAD for each gene
+                maxlen = pd.DataFrame.max(_tads_amex['end'] - _tads_amex['start'])
+                _tads_amex = _tads_amex[_tads_amex['end'] - _tads_amex['start'] == maxlen].head(1)
+                _tads_amex['symbol'] = _genes_amex['symbol'][idx]
+                _tads = pd.concat([_tads, _tads_amex])
+            # Take the TAD with the highest number of genes in it.
+            gene_counts = _tads.groupby(['chr', 'start', 'end']).count()
+            mxN = pd.DataFrame.max(gene_counts['symbol'])
+            _amex_tad = gene_counts[gene_counts['symbol'] == mxN].head(1)
             
             # Find the gene closest to the CNE
             mindist = pd.DataFrame.min( pd.DataFrame.abs(genes['start'] - cne['start_hg']) )
