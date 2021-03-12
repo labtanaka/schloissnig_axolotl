@@ -1,0 +1,3 @@
+sbatch -J tads --array=1-100 --wrap="echo \"TASK: \${SLURM_ARRAY_TASK_ID}\"; sed -n \"\${SLURM_ARRAY_TASK_ID}~100p;\" tads.bed > work/\${SLURM_ARRAY_TASK_ID}.bed; echo 'Run'; ~/venv/cooler/bin/python ./calculate_cvd.py /groups/tanaka/Projects/axolotl-genome/AmexG_v6.0/AmexG_v6.0_DD/work/TADs/HiCUP/cooler/zoom/AL1_DpnII.cooler.zoom::/resolutions/10000 work/\${SLURM_ARRAY_TASK_ID}.bed work/\${SLURM_ARRAY_TASK_ID}.dat work/\${SLURM_ARRAY_TASK_ID}.csv"
+
+~/venv/cooler/bin/python merge.py $(readlink -f work/) merged.dat

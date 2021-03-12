@@ -1,0 +1,6 @@
+1. Download the gar proteins from ftp://ftp.ensembl.org/pub/release-102/fasta/lepisosteus_oculatus/pep/Lepisosteus_oculatus.LepOcu1.pep.all.fa.gz
+2. Download the GFF3 file from ftp://ftp.ensembl.org/pub/release-102/gff3/lepisosteus_oculatus/Lepisosteus_oculatus.LepOcu1.102.abinitio.gff3.gz
+3. Create a fasta file with the protein sequences, which also contains the coordinates of the respective genes in the genome (basically, a combination of 1 and 2)
+4. Run blastp for axo<=>gar
+5. Identify mutually best hits in axolotl and gar
+6. Plot the genes from 5 such that each point geneA(axo, gar) is given by the coordinates of geneA in axolotl on X and gar on Y
