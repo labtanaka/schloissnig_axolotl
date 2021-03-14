@@ -1,0 +1,12 @@
+Manually annotated genes can be added as follows
+
+- Create a BED file containing the coordinates of the exons in contigs (see examples/hoxd.contigs.bed)
+- Convert the coordinates into coordinates within scaffolds (make sure to append and not to overwrite the original patch.bed12 file):
+    python3 scripts/utils/liftOver.py --chr data/ambMex60DD.scaffolds_structure.txt.gz --sizes data/ambMex60DD.contigs.chrom.sizes --bed examples/hoxd.contigs.bed | sed -e 's/_E[12]//g' | python3 scripts/utils/exonBed_to_UcscBed.py >> genome/annotation/patch.bed12
+
+- Add the patched BED as a custom track
+- Document the changes below
+
+
+CHANGELOG:
+2021-03-14  Added manually annotated (A. Kawaguchi) HoxD genes to patch.bed12
