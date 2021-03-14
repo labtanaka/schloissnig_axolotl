@@ -5,6 +5,30 @@ Manually annotated genes can be added as follows
     python3 scripts/utils/liftOver.py --chr data/ambMex60DD.scaffolds_structure.txt.gz --sizes data/ambMex60DD.contigs.chrom.sizes --bed examples/hoxd.contigs.bed | sed -e 's/_E[12]//g' | python3 scripts/utils/exonBed_to_UcscBed.py >> genome/annotation/patch.bed12
 
 - Add the patched BED as a custom track
+OR
+- Connect to the internal genome browser (only accessible from the intranet and not visible from the internet)
+- Navigate to /home/imp/sergej.nowoshilow/tracks/
+- Download the current patch file: curl https://raw.githubusercontent.com/labtanaka/schloissnig_axolotl/main/genome/annotation/patch.bed12 > patch.bed12
+- Make sure the file trackDb.ra contains the following lines:
+    track annotation_patch
+    type bed 12
+    shortLabel Annotation patches
+    longLabel Manually annotated genes
+    priority 1
+    itemRgb on
+    colorByStrand 19,89,38 26,12,232
+    visibility full
+    group annotation
+    searchName patch_symbol
+    searchTable annotation_patch
+    searchType bed
+    searchMethod fuzzy
+    dataVersion Mar 2021
+
+- Run 'sudo hgTrackDb . ambMex60DD trackDb ../sql/trackDb.sql .'
+- Run 'sudo hgLoadBed ambMex60DD annotation_patch patch.bed12'
+- Run 'sudo hgFindSpec -strict . ambMex60DD  hgFindSpec ../sql/hgFindSpec.sql .'
+
 - Document the changes below
 
 
