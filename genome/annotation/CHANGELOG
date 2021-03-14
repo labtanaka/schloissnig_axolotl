@@ -18,7 +18,7 @@ OR
     itemRgb on
     colorByStrand 19,89,38 26,12,232
     visibility full
-    group annotation
+    group genes
     searchName patch_symbol
     searchTable annotation_patch
     searchType bed
